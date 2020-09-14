@@ -1,0 +1,45 @@
+@startuml
+
+actor "End User" as au
+actor "Operator" as ou
+
+rectangle "VCN (e.g. 10.0.0.0/16)" as vcn {
+  rectangle "Public Subnet (e.g. 10.0.0.0/24)" {
+    rectangle "SSH Jump Host\n(public IP)" as jh
+    rectangle "Application\nLoad Balancer\n(public IP)" as alb
+    rectangle "Management\nLoad Balancer\n(public IP)" as mlb
+    rectangle "Kubernetes\nLoad Balancer\n(public IP)" as klb
+  }
+  rectangle "Private Subnet (e.g. 10.0.1.0/24)" {
+    rectangle "OLCNE Operator Host" as on
+    rectangle "Istio Ingress Service" as ii
+    rectangle "NGINX Ingress Service" as ni
+    collections "Kubernetes Master Nodes" as mn
+    collections "Kubernetes Worker Nodes/Pods" as wn
+    rectangle "File System" as fs {
+    }
+    rectangle "DNS" as dns {
+    }
+  }
+}
+
+ou --> jh: tcp:22(ssh)
+ou --> mlb: tcp:80,443(http)
+ou --> klb: tcp:6443(k8s)
+
+au --> alb: tcp:80,443(http)
+
+jh --> on: tcp:22(ssh)
+
+alb --> ii: tcp:31380,31390(http)
+mlb --> ni: tcp:30080,30443(http)
+klb --> mn: tcp:6443(k8s)
+
+ii -d-> wn
+ni -d-> wn
+
+on -> mn: ?
+wn -d-> fs: tcp:111,2049(nfs)
+wn -d-> dns: udp:53(dns)
+
+@enduml
